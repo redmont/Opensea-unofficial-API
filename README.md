@@ -15,7 +15,7 @@ yarn install
 ## Run the application
 
 ```sh
-yarn start
+PRIVATE_KEY="..." npm start
 ```
 
 You can also run `node .` to skip the build step.
