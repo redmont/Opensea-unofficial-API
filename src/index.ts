@@ -24,8 +24,14 @@ export async function main(options: ApplicationConfig = {}) {
       ],
     });
     globalThis.page = await browser.newPage();
-    await globalThis.page.goto("https://core-api.prod.blur.io/v1/");
-    await globalThis.page.setExtraHTTPHeaders({
+    await page.setCacheEnabled(false);
+
+    await Promise.all([
+      page.waitForNavigation({ timeout: 60000 }),
+      globalThis.page.goto("https://core-api.prod.blur.io/v1/",{waitUntil: "networkidle0",timeout: 60000})
+  ])
+
+  await globalThis.page.setExtraHTTPHeaders({
         "Accept-Language": "en-US,en;q=0.9",
         "User-Agent":
             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36",
@@ -34,7 +40,6 @@ export async function main(options: ApplicationConfig = {}) {
     console.log("Browser and page initialized");
     const url = app.restServer.url;
     console.log(`Server is running at ${url}`);
-    console.log(`Try ${url}/ping`);
   })()
   return app;
 }
