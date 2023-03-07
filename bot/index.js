@@ -8,13 +8,35 @@ const MIN_PROFIT = 0.02;
 
 const results = {};
 let afterFirst = false;
+let authTkn;
+
+const getAuthTkn = async () => {
+  const URL = 'http://127.0.0.1:3000/auth/getToken';
+  const options = {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      walletAddress: wallet.address,
+    }),
+  };
+
+  let data;
+  await fetch(URL, options)
+    .then(res => res.json())
+    .then(json => (data = JSON.parse(JSON.stringify(json))))
+    .catch(err => console.error('error:' + err));
+
+  authTkn = data.accessToken;
+  console.log('\nauthTkn: ', authTkn);
+}
 
 const getData = async url => {
   const options = {
     method: 'GET',
     headers: {
-      authToken:
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ3YWxsZXRBZGRyZXNzIjoiMHgwMDAwMGU4Yzc4ZTQ2MTY3OGU0NTViMWY2ODc4YmIwY2U1MGNlNTg3Iiwic2lnbmF0dXJlIjoiMHg0Y2YzNDNiYWRlNzhmM2MwMWY0MTI0OWU3ZWQwMGNiNzQ0MGU4YWNjMWFlMDhiYWJjM2VkNjRjODdjZDU4NTI0NzJmYjBiNjU5NmEzYmU3NDU5NWVmOWMxZGEwYjJhZjVjYjNkN2JjNjAxYjI3OWFkMmI0OGNkNzVjMDBjMWMxZjFjIiwiaWF0IjoxNjc3OTQ4MTA4LCJleHAiOjE2ODA1NDAxMDh9.Ta9QN878GV9QaX63TxZUy4cRUh6YPDPI7KefopcTOow',
+      authToken: authTkn,
       walletAddress: wallet.address,
     },
   };
@@ -61,7 +83,8 @@ const checkProfit = async data => {
 };
 
 async function exec() {
-  // console.log('START')
+  await getAuthTkn()
+
   //1
   var filters = {sort: 'FLOOR_PRICE', order: 'DESC'};
   var filtersURLencoded = encodeURIComponent(JSON.stringify(filters));
@@ -69,7 +92,7 @@ async function exec() {
   var data = await getData(url);
   await checkProfit(data);
 
-  while (
+  while ( //get all collections with that has floor price
     data.collections[data.collections.length - 1].floorPrice != null &&
     data.collections[data.collections.length - 1].floorPrice.amount > 0
   ) {
@@ -84,9 +107,12 @@ async function exec() {
         sort: 'FLOOR_PRICE',
         order: 'DESC',
       };
+
       filtersURLencoded = encodeURIComponent(JSON.stringify(filters));
       url = URL + '?filters=' + filtersURLencoded;
+      console.time('getData')
       data = await getData(url);
+      console.timeEnd('getData')
       await checkProfit(data);
     } catch (e) {
       console.log('error', e);
