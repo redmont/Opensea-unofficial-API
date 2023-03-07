@@ -67,11 +67,11 @@ const checkProfit = async data => {
           console.log('Order', element);
         }
       } else if (profit_gross != results[element.contractAddress].profit) {
-        // console.log(
-        //   `\nUPDATE profit ${
-        //     results[element.contractAddress].profit
-        //   } -> ${profit_gross}`,
-        // );
+        console.log(
+          `\nCollection: ${results[element.contractAddress].collectionAddress}, UPDATE profit ${
+            results[element.contractAddress].profit
+          } -> ${profit_gross}`,
+        );
         element['profit'] = profit_gross;
         results[element.contractAddress] = element;
         // console.log('UPDATED Order', results[element.contractAddress]);
@@ -110,9 +110,7 @@ async function exec() {
 
       filtersURLencoded = encodeURIComponent(JSON.stringify(filters));
       url = URL + '?filters=' + filtersURLencoded;
-      console.time('getData')
       data = await getData(url);
-      console.timeEnd('getData')
       await checkProfit(data);
     } catch (e) {
       console.log('error', e);
