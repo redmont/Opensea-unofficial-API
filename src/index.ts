@@ -32,7 +32,7 @@ export async function main(options: ApplicationConfig = {}) {
             ],
             executablePath: executablePath(),
         });
-        
+
     globalThis.page = await browser.newPage();
     await globalThis.page.goto("https://core-api.prod.blur.io/v1/");
     await globalThis.page.setExtraHTTPHeaders({
@@ -40,7 +40,7 @@ export async function main(options: ApplicationConfig = {}) {
         "User-Agent":
             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36",
     });
-    
+
     console.log("Browser and page initialized");
     const url = app.restServer.url;
     console.log(`Server is running at ${url}`);
