@@ -1,5 +1,7 @@
 import {ApplicationConfig, ApiBlurUnofficialApplication} from './application';
-const puppeteer = require("puppeteer");
+const puppeteer = require("puppeteer-core");
+const proxyChain = require("proxy-chain");
+const {executablePath} = require("puppeteer");
 
 export * from './application';
 
@@ -14,24 +16,26 @@ export async function main(options: ApplicationConfig = {}) {
   await app.start();
 
   (async ()=>{
-    const browser = await puppeteer.launch({
-      headless: true,
-      devtools: true,
-      args: [
-          "--disable-web-security",
-          "--disable-features=IsolateOrigins",
-          "--disable-site-isolation-trials",
-      ],
-    });
+    const oldProxyUrl = "http://xnmldktr:p980i7e5knud@185.199.229.156:7492";
+        const newProxyUrl = await proxyChain.anonymizeProxy(oldProxyUrl);
+
+        console.log(newProxyUrl);
+
+        const browser = await puppeteer.launch({
+          headless: true,
+          devtools: true,
+            args: [
+                `--proxy-server=${newProxyUrl}`,
+                "--disable-web-security",
+                "--disable-features=IsolateOrigins",
+                "--disable-site-isolation-trials",
+            ],
+            executablePath: executablePath(),
+        });
+        
     globalThis.page = await browser.newPage();
-    await page.setCacheEnabled(false);
-
-    await Promise.all([
-      page.waitForNavigation({ timeout: 60000 }),
-      globalThis.page.goto("https://core-api.prod.blur.io/v1/",{waitUntil: "networkidle0",timeout: 60000})
-  ])
-
-  await globalThis.page.setExtraHTTPHeaders({
+    await globalThis.page.goto("https://core-api.prod.blur.io/v1/");
+    await globalThis.page.setExtraHTTPHeaders({
         "Accept-Language": "en-US,en;q=0.9",
         "User-Agent":
             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36",
@@ -40,6 +44,7 @@ export async function main(options: ApplicationConfig = {}) {
     console.log("Browser and page initialized");
     const url = app.restServer.url;
     console.log(`Server is running at ${url}`);
+    console.log(`Try ${url}/ping`);
   })()
   return app;
 }
