@@ -36,7 +36,7 @@ export class CollectionsController {
   async collectionBids(@param.path.string('collection') collection: string): Promise<any> {
 
     const {authtoken,walletaddress} = this.req.headers
-    
+
     const cookies = [{
       'name': 'authToken',
       'value': authtoken
@@ -44,7 +44,7 @@ export class CollectionsController {
       'name': 'walletAddress',
       'value': walletaddress
     }];
-    
+
     await page.setCookie(...cookies);
 
     const apiURL = "https://core-api.prod.blur.io/v1/collections/"+collection+"/executable-bids?filters=%7B%7D"
@@ -70,7 +70,7 @@ export class CollectionsController {
   async collections(): Promise<any> {
     const {authtoken,walletaddress} = this.req.headers
     const {filters} = this.req.query
-    
+
     const cookies = [{
       'name': 'authToken',
       'value': authtoken
@@ -78,12 +78,12 @@ export class CollectionsController {
       'name': 'walletAddress',
       'value': walletaddress
     }];
-    
+
     await page.setCookie(...cookies);
 
-    const filtersURLencoded = encodeURIComponent(JSON.stringify(filters))
-    
-    const apiURL = "https://core-api.prod.blur.io/v1/collections?filters="+filtersURLencoded
+    const _filtersString = decodeURIComponent(JSON.stringify(filters));
+    const filtersString = decodeURIComponent(JSON.parse(_filtersString));
+    const apiURL = `https://core-api.prod.blur.io/v1/collections/?filters=${encodeURIComponent(filtersString)}`;
 
     const response = await globalThis.page.evaluate(async (apiURL:string) => {
       const xhr = new XMLHttpRequest();
@@ -97,6 +97,7 @@ export class CollectionsController {
           };
       });
     },apiURL);
+
     return response
   }
 }

@@ -27,7 +27,7 @@ const AUTH_RESPONSE: ResponseObject = {
   },
 };
 
-const wallet = new ethers.Wallet(process.env.PRIVATE_KEY);
+const wallet = new ethers.Wallet(process.env.PK_7);
 
 export class AuthController {
   constructor(@inject(RestBindings.Http.REQUEST) private req: Request) {

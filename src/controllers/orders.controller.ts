@@ -11,7 +11,7 @@ import {
 } from '@loopback/rest';
 const {XMLHttpRequest} =require('xmlhttprequest');
 const ethers = require("ethers");
-        
+
 const abi = require("../customs/abi/blurExchange").default;
 const iface = new ethers.utils.Interface(abi);
 
@@ -39,7 +39,7 @@ export class OrdersController {
       const {authtoken,walletaddress} = this.req.headers
 
       console.log(data);
-      
+
       const cookies = [{
         'name': 'authToken',
         'value': authtoken
@@ -47,17 +47,17 @@ export class OrdersController {
         'name': 'walletAddress',
         'value': walletaddress
       }];
-      
+
       await page.setCookie(...cookies);
-  
+
       const apiURL = "https://core-api.prod.blur.io/v1/orders/format"
-    
+
       const response = await globalThis.page.evaluate(async (apiURL:string,data:Object) => {
         const xhr = new XMLHttpRequest();
         xhr.open("POST", apiURL);
         xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
         xhr.send(JSON.stringify(data));
-        
+
         return new Promise((resolve) => {
             xhr.onload = () => {
                 resolve(JSON.parse(xhr.responseText));
@@ -79,17 +79,17 @@ export class OrdersController {
         'name': 'walletAddress',
         'value': walletaddress
       }];
-      
+
       await page.setCookie(...cookies);
-  
+
       const apiURL = "https://core-api.prod.blur.io/v1/buy/"+collection;
-    
+
       const response = await globalThis.page.evaluate(async (apiURL:string,data:Object) => {
         const xhr = new XMLHttpRequest();
         xhr.open("POST", apiURL);
         xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
         xhr.send(JSON.stringify(data));
-        
+
         return new Promise((resolve) => {
             xhr.onload = () => {
                 resolve(JSON.parse(xhr.responseText));
@@ -108,9 +108,9 @@ export class OrdersController {
           data.decodedResponse = decodedDataJson.buys
           responseData.push(data)
         });
-        
+
         return responseData;
-    
+
       }
 
       return response
@@ -145,7 +145,7 @@ export class OrdersController {
       );
       return plaintext;
   }
-   
+
 }
 
 
