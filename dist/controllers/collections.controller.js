@@ -61,8 +61,9 @@ let CollectionsController = class CollectionsController {
                 'value': walletaddress
             }];
         await page.setCookie(...cookies);
-        const filtersURLencoded = encodeURIComponent(JSON.stringify(filters));
-        const apiURL = "https://core-api.prod.blur.io/v1/collections?filters=" + filtersURLencoded;
+        const _filtersString = decodeURIComponent(JSON.stringify(filters));
+        const filtersString = decodeURIComponent(JSON.parse(_filtersString));
+        const apiURL = `https://core-api.prod.blur.io/v1/collections/?filters=${encodeURIComponent(filtersString)}`;
         const response = await globalThis.page.evaluate(async (apiURL) => {
             const xhr = new XMLHttpRequest();
             xhr.open("GET", apiURL);

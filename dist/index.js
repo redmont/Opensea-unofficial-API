@@ -13,9 +13,7 @@ async function main(options = {}) {
     await app.boot();
     await app.start();
     (async () => {
-        const oldProxyUrl = "http://brd-customer-hl_42a1952b-zone-residential:d5l1l6bkjfdn@zproxy.lum-superproxy.io:22225";
-        // const oldProxyUrl = "http://brd-customer-hl_42a1952b-zone-zone1:ql7yr1ftcr5j@zproxy.lum-superproxy.io:22225"
-        // const oldProxyUrl = "http://xnmldktr:p980i7e5knud@185.199.229.156:7492";
+        const oldProxyUrl = "http://xnmldktr:p980i7e5knud@185.199.229.156:7492";
         const newProxyUrl = await proxyChain.anonymizeProxy(oldProxyUrl);
         console.log(newProxyUrl);
         const browser = await puppeteer.launch({

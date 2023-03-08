@@ -3,7 +3,7 @@ const ethers = require('ethers');
 const fetch = require('node-fetch');
 
 const URL = 'http://127.0.0.1:3000/v1/collections/';
-const wallet = new ethers.Wallet(process.env.PRIVATE_KEY);
+const wallet = new ethers.Wallet(process.env.PK_7);
 const MIN_PROFIT = 0.02;
 
 const results = {};
@@ -56,6 +56,9 @@ const checkProfit = async data => {
         Number(element.bestCollectionBid.amount) -
         Number(element.floorPrice.amount);
       const profit_net = profit_gross - MIN_PROFIT;
+      if (element.contractAddress.toLowerCase()=='0x5b11fe58a893f8afea6e8b1640b2a4432827726c'.toLocaleLowerCase()){
+        console.log('\n\n@@@element', element);
+      }
 
       if (profit_net < 0) {
         return;
@@ -82,15 +85,8 @@ const checkProfit = async data => {
   });
 };
 
-async function exec() {
-  await getAuthTkn()
-
-  //1
-  var filters = {sort: 'FLOOR_PRICE', order: 'DESC'};
-  var filtersURLencoded = encodeURIComponent(JSON.stringify(filters));
-  var url = URL + '?filters=' + filtersURLencoded;
-  var data = await getData(url);
-  await checkProfit(data);
+const searchRest = async _data => {
+  let data = _data;
 
   while ( //get all collections with that has floor price
     data.collections[data.collections.length - 1].floorPrice != null &&
@@ -110,15 +106,29 @@ async function exec() {
 
       filtersURLencoded = encodeURIComponent(JSON.stringify(filters));
       url = URL + '?filters=' + filtersURLencoded;
-      console.time('getData');
+      console.log('floor:', data.collections[data.collections.length - 1].floorPrice.amount)
+      console.log('lAddr:', data.collections[data.collections.length - 1].contractAddress)
       data = await getData(url);
-      console.timeEnd('getData');
       await checkProfit(data);
     } catch (e) {
       console.log('error', e);
       console.log('data', data.collections[data.collections.length - 1]);
     }
   }
+}
+
+async function exec() {
+  await getAuthTkn()
+
+  //1
+  var filters = {sort: 'FLOOR_PRICE', order: 'DESC'};
+  var filtersURLencoded = encodeURIComponent(JSON.stringify(filters));
+  var url = URL + '?filters=' + filtersURLencoded;
+  var data = await getData(url);
+  await checkProfit(data);
+  await searchRest(data);
+
+
   if (!afterFirst) {
     console.log('\n------------------------------------\n');
     afterFirst = true;
