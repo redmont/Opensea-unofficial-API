@@ -1,4 +1,4 @@
-import {ApplicationConfig, ApiBlurUnofficialApplication} from './application';
+import {ApiBlurUnofficialApplication, ApplicationConfig} from './application';
 const puppeteer = require("puppeteer-core");
 const proxyChain = require("proxy-chain");
 const {executablePath} = require("puppeteer");
