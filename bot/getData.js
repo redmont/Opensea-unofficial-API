@@ -106,8 +106,8 @@ const searchRest = async _data => {
 
       filtersURLencoded = encodeURIComponent(JSON.stringify(filters));
       url = URL + '?filters=' + filtersURLencoded;
-      console.log('floor:', data.collections[data.collections.length - 1].floorPrice.amount)
-      console.log('lAddr:', data.collections[data.collections.length - 1].contractAddress)
+      // console.log('floor:', data.collections[data.collections.length - 1].floorPrice.amount)
+      // console.log('lAddr:', data.collections[data.collections.length - 1].contractAddress)
       data = await getData(url);
       await checkProfit(data);
     } catch (e) {
@@ -118,22 +118,30 @@ const searchRest = async _data => {
 }
 
 async function exec() {
-  await getAuthTkn()
+  try {
+    if(!afterFirst) {
+      await getAuthTkn()
+    }
 
-  //1
-  var filters = {sort: 'FLOOR_PRICE', order: 'DESC'};
-  var filtersURLencoded = encodeURIComponent(JSON.stringify(filters));
-  var url = URL + '?filters=' + filtersURLencoded;
-  var data = await getData(url);
-  await checkProfit(data);
-  await searchRest(data);
+    //1
+    var filters = {sort: 'FLOOR_PRICE', order: 'DESC'};
+    var filtersURLencoded = encodeURIComponent(JSON.stringify(filters));
+    var url = URL + '?filters=' + filtersURLencoded;
+    var data = await getData(url);
+    await checkProfit(data);
+    await searchRest(data);
 
+    if (!afterFirst) {
+      console.log('\n------------------------------------\n');
+      afterFirst = true;
+    }
+    exec();
 
-  if (!afterFirst) {
-    console.log('\n------------------------------------\n');
-    afterFirst = true;
+  } catch (e) {
+    console.log('error', e)
+    afterFirst=false;
+    exec();
   }
-  exec();
 }
 
 exec();
