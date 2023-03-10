@@ -71,4 +71,5 @@ const getAuthTkn = async () => {
 	}
 
 	//buy, then sell from 0x7..
+	//todo
 })();
