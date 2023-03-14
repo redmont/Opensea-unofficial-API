@@ -21,7 +21,7 @@ const AUTH_RESPONSE = {
         },
     },
 };
-const wallet = new ethers.Wallet(process.env.PK_7);
+const wallet = new ethers.Wallet(process.env.PK_BOT);
 let AuthController = class AuthController {
     constructor(req) {
         this.req = req;

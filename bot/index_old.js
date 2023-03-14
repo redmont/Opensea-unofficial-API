@@ -11,9 +11,39 @@ const delay = 86400; // 24h
 const addr_to_approve_nft = '0x00000000000111abe46ff893f3b2fdf1f759a8a8'; //executionDelegate
 
 /**
- * @todo
- * [ ] Clean
- * [ ] Exec for real example with low risk or small
+ * @todo: create & exec arb (you can do 1st via Blur app to understand each step)
+ *
+ * [ ] fix proxy, so that it does not crash after 10x calls
+ *
+ * //preparation:
+ * [x] 1. ACC_0: Create Sell Order (for 0.01 ETH)
+ * 		[x] ACC_0: get NFT
+ * 		[x] ACC_0: SetApprovalForAll NFT to Blur ()
+ *    [x] ACC_0: create sell NFT order (v1/orders/format, receive data, v1/orders/submit)
+ * [x] 2. ACC_F: Create Buy Order (for 0.02 ETH)
+ *    [x] Deposit into Blur Pool
+ * 		[x] Create Bid (v1/collection-bids/format, receive data, v1/collection-bids/submit)
+ *
+ * //execution (in a single script, as fast as possible, this needs to emit target bot behavior):
+ * [x] 3. Get data from API about above Buy & Sell orders (using our endpoints)
+ * [ ] 4. ACC_7: Do arb
+ *    [x] Find collection with: "floorPrice > bestCollectionBid"
+ *    [x] get bids prices & tknIds
+ *
+ *
+ *    [ ] experiment
+ *        [x] check if can accept bid without selling NFT (what result?) --- CAN'T
+ *        [x] check if can sell bid without approving NFT (what result?) --- CAN'T (not highlight on fronted to accept bid)
+ *        [x] check if can list NFT without having it --- CAN'T (You need to own this NFT in order to list it for sale)
+ *
+ * 		[ ] (TX)  buy for floorPrice (same tx can approve NFT all)
+ *    [ ] (TX)  approve NFT
+ *    [ ] (SIG) create sale order
+ *       [ ] try sell without having NFT
+ *       [ ] try accept bid without having NFT
+ *       [x] try accept bid without approving NFT
+ *       [ ] create sale with approved NFT
+ *    [ ] (SIG) accept bid
  */
 
 const getAuthTkn = async () => {

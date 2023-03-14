@@ -1,0 +1,9 @@
+POST
+	https://core-api.prod.blur.io/v1/orders/submit
+
+//request
+{
+	"marketplace": "BLUR",
+	"marketplaceData": "[\"YM16/jHgyI7DdVX56/ywOXjrvRFvI+Kb1/g/CrKtoFqiDajoAKccD42q4Xb/GTLV+YNpPpleHXNSqFP9qoxujJ8WfSIDr/7pMbSDm9PgbL3ilW3no1e+cEWzQtZamPmRRXfkVvgnFymgnxQiv0SUdVPh9t0O//NPUEeZlbOps8hG8HuYs7FrE9zq5cgreQt08x/speA73C9pSKLAyc2Rpd1d9q2JQlw50YpC4CITVOlg923xeF0keKnPLZ63XlfQRVbxr5/LY83GOKub6fSke70mGQriFnHgMJ6KZDxy0nTCcKQ+jaHjNxpI74Bbfag2+rOr7Z9MAXdR755scqcLUhKx+i51Ja679jhadAO0gnu0sC89LhcVmyrazZ6VyizA6fBiJ61onTG7EWONWMFhZhj56duLc2tNlkq8tGuKwGOyJM+RlFzBCZxPGFyjHGhib/EJ/MQWuhS6KpUROzY2n4T9TONTJdqrWVYCLEl3I/J1en7d5cOSDPyMnyNMBP/X2uZG5GmwuByiOlFCauRDwOUrYL/q/h4ltAPodf/1d7FylAW9fzU35BIr4uDdA8uwIUcTNHsLnSV93+5+jV4MEyXsyubn3KtJ/avalg5BJFFeKXnl8jqp+XKMjiQ0ED+XgeJhcxm3bsDUYD1if10f34KgWJisxEE+jD6IACaeqA7DA9J+WulxnIlmxTBvUgYKRAkqVbQAepTMKo/SeuBxBl5GR8w4EknjfYQJ9gMq1lQcFJywjyvvs2yqYnxMBX6hI2BK1H5b3is6FImc9ClUe5Ht6GF/umcZQ6JYQdkq72zYkkaTeW4dTQSOQT9XcxvT052OYwX2BNPG0f0BjmILRAa7+sFWkIVaNaFkS509HcjPrzLS/8KT4A==\",\"N/aeGf6rvl/tNDBy/tWoNw==\",\"G5kXTeGXcx/x3Qh6nepZGA==\"]",
+	"signature": "0xad861f8e6e221b21235bb544002de4801b2222e5f1ce9bd271319d9b42e8591e4e564ed27a6dcfaf60b29c6c7a8aef3eb409342569668180668d371b32e725dc1b"
+}

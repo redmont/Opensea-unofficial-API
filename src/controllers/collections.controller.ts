@@ -64,6 +64,39 @@ export class CollectionsController {
     return response
   }
 
+    // Map to `GET /v1/collections/{collection}/prices`
+    @get('/v1/collections/{collection}/prices')
+    @response(200, RESPONSE)
+    async collectionPrices(@param.path.string('collection') collection: string): Promise<any> {
+      console.log('\nIn collectionPrices, collection: ', collection)
+      const {authtoken,walletaddress} = this.req.headers
+      const cookies = [{
+        'name': 'authToken',
+        'value': authtoken
+      },{
+        'name': 'walletAddress',
+        'value': walletaddress
+      }];
+
+      await page.setCookie(...cookies);
+      const apiURL = "https://core-api.prod.blur.io/v1/collections/"+collection+"/prices";
+
+      const response = await globalThis.page.evaluate(async (apiURL:string) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("GET", apiURL);
+        xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+        xhr.send(JSON.stringify({filters: {}}));
+
+        return new Promise((resolve) => {
+          xhr.onload = () => {
+            resolve(JSON.parse(xhr.responseText));
+          };
+        });
+      }, apiURL);
+
+      return response
+    }
+
   // Map to `GET /v1/collections`
   @get('/v1/collections')
   @response(200, RESPONSE)

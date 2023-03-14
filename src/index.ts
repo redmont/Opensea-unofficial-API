@@ -16,8 +16,8 @@ export async function main(options: ApplicationConfig = {}) {
   await app.start();
 
   (async ()=>{
-    const oldProxyUrl = 'http://user-sps2v0tyzc-country-us-city-ashburn:sps2v0tyzc:8d9fa897GG8430s2qPs2@gate.smartproxy.com:7000';
-    // const oldProxyUrl = "http://xnmldktr:p980i7e5knud@185.199.229.156:7492";
+    // const oldProxyUrl = 'http://user-sps2v0tyzc-country-us-city-ashburn:sps2v0tyzc:8d9fa897GG8430s2qPs2@gate.smartproxy.com:7000';
+    const oldProxyUrl = "http://xnmldktr:p980i7e5knud@185.199.229.156:7492";
         const newProxyUrl = await proxyChain.anonymizeProxy(oldProxyUrl);
 
         console.log(newProxyUrl);

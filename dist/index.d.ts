@@ -1,4 +1,4 @@
-import { ApplicationConfig, ApiBlurUnofficialApplication } from './application';
+import { ApiBlurUnofficialApplication, ApplicationConfig } from './application';
 export * from './application';
 declare global {
     var page: any;
