@@ -1,7 +1,14 @@
 # api-OS-unofficial
 
-This application is generated using [LoopBack 4 CLI](https://loopback.io/doc/en/lb4/Command-line-interface.html) with the
-[initial project layout](https://loopback.io/doc/en/lb4/Loopback-application-layout.html).
+I built these rest api's to expand the limitations & restrictions of OpenSea APIs
+
+Restrictions/Limitations in official API
+
+- We can not get Sell order data of a NFT if we are not already the owner of NFT. We need this info without being the owner of NFT in our arbitrage bot since we will bundle the buy &sell tx in one. This means we can't impact or interact off chain data in between.
+
+- We have API concurrency threshold. This limits the no. of times and no. of concurrent calls we can make. In this custom API, i am bypassing the cloudlfare protections and proxy rotating IPs to have no limit.
+
+- Opensea APIs needs reauthentication after a certain time. This API will automatically re-authenticate.
 
 ## Install dependencies
 
