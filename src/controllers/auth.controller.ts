@@ -27,7 +27,7 @@ const AUTH_RESPONSE: ResponseObject = {
   },
 };
 
-const wallet = new ethers.Wallet(process.env.PK_7);
+const wallet = new ethers.Wallet(process.env.PK_BOT);
 
 export class AuthController {
   constructor(@inject(RestBindings.Http.REQUEST) private req: Request) {
@@ -50,9 +50,9 @@ export class AuthController {
     },payload.walletAddress);
 
     const signature = await wallet.signMessage(response.message);
-    
+
     response.signature = signature;
-    
+
     const loginResponse = await globalThis.page.evaluate(async (body:any) => {
       const xhr = new XMLHttpRequest();
       xhr.open("POST", "https://core-api.prod.blur.io/auth/login");
@@ -67,6 +67,6 @@ export class AuthController {
 
     return loginResponse
   }
-   
+
   }
 

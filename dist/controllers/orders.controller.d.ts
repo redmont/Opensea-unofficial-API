@@ -4,6 +4,7 @@ export declare class OrdersController {
     private req;
     constructor(req: Request);
     createListingFormat(data: Object): Promise<any>;
+    submitListing(data: Object): Promise<any>;
     createBuyFormat(data: Object, collection: string, fulldata?: boolean): Promise<any>;
     mapKeyValues: (obj: {
         [key: string]: any;

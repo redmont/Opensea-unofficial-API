@@ -4,10 +4,11 @@ exports.OrdersController = void 0;
 const tslib_1 = require("tslib");
 const core_1 = require("@loopback/core");
 const rest_1 = require("@loopback/rest");
+const ethers_1 = require("ethers");
 const { XMLHttpRequest } = require('xmlhttprequest');
-const ethers = require("ethers");
+const { ethers } = require("ethers");
 const abi = require("../customs/abi/blurExchange").default;
-const iface = new ethers.utils.Interface(abi);
+const iface = new ethers_1.Interface(abi);
 const RESPONSE = {
     description: 'Response',
     content: {
@@ -76,6 +77,32 @@ let OrdersController = class OrdersController {
         }, apiURL, data);
         return response;
     }
+    // Map to `POST /v1/orders/submit`
+    async submitListing(data) {
+        const { authtoken, walletaddress } = this.req.headers;
+        console.log('Attempt to list order, data', data);
+        const cookies = [{
+                'name': 'authToken',
+                'value': authtoken
+            }, {
+                'name': 'walletAddress',
+                'value': walletaddress
+            }];
+        await page.setCookie(...cookies);
+        const apiURL = "https://core-api.prod.blur.io/v1/orders/submit";
+        const response = await globalThis.page.evaluate(async (apiURL, data) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open("POST", apiURL);
+            xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+            xhr.send(JSON.stringify(data));
+            return new Promise((resolve) => {
+                xhr.onload = () => {
+                    resolve(JSON.parse(xhr.responseText));
+                };
+            });
+        }, apiURL, data);
+        return response;
+    }
     // Map to `POST /v1/buy/{collection}?fulldata=true`
     async createBuyFormat(data, collection, fulldata) {
         const { authtoken, walletaddress } = this.req.headers;
@@ -123,6 +150,14 @@ tslib_1.__decorate([
     tslib_1.__metadata("design:paramtypes", [Object]),
     tslib_1.__metadata("design:returntype", Promise)
 ], OrdersController.prototype, "createListingFormat", null);
+tslib_1.__decorate([
+    (0, rest_1.post)('/v1/orders/submit'),
+    (0, rest_1.response)(200, RESPONSE),
+    tslib_1.__param(0, (0, rest_1.requestBody)()),
+    tslib_1.__metadata("design:type", Function),
+    tslib_1.__metadata("design:paramtypes", [Object]),
+    tslib_1.__metadata("design:returntype", Promise)
+], OrdersController.prototype, "submitListing", null);
 tslib_1.__decorate([
     (0, rest_1.post)('/v1/buy/{collection}'),
     (0, rest_1.response)(200, RESPONSE),
