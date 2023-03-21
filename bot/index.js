@@ -458,9 +458,7 @@ const _exec = async arb => {
   const listed = await listAsset(listData, sig)
   console.log('\nIs listed?', listed)
 
-
-
-  //selling
+  //////////////// SELL (1h delay here) ////////////////////
   const sellData = await getSellData(listData, highestBid)
   console.log('\nsellData', sellData)
 
