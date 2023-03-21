@@ -54,7 +54,6 @@ let OrdersController = class OrdersController {
     // Map to `POST /v1/orders/format`
     async createListingFormat(data) {
         const { authtoken, walletaddress } = this.req.headers;
-        console.log(data);
         const cookies = [{
                 'name': 'authToken',
                 'value': authtoken
@@ -80,7 +79,6 @@ let OrdersController = class OrdersController {
     // Map to `POST /v1/orders/submit`
     async submitListing(data) {
         const { authtoken, walletaddress } = this.req.headers;
-        console.log('Attempt to list order, data', data);
         const cookies = [{
                 'name': 'authToken',
                 'value': authtoken
@@ -126,17 +124,26 @@ let OrdersController = class OrdersController {
                 };
             });
         }, apiURL, data);
+        console.log('\n///////RESPONSE////////', response);
         if (fulldata) {
+            console.log('\nin fulldata');
             const responseData = [];
             const a = this.decodedData(response.data);
             let decodedDataJson = JSON.parse(a);
-            decodedDataJson.buys.forEach((buy) => {
-                let decodedResponse = iface.decodeFunctionData("execute", buy.txnData.data);
-                let data = {};
-                this.mapKeyValues(decodedResponse, data);
-                data.decodedResponse = decodedDataJson.buys;
-                responseData.push(data);
-            });
+            return decodedDataJson;
+            //not all function are "execute"
+            // responseData.push(decodedDataJson)
+            // console.log('decodedDataJson', decodedDataJson.buys[0])
+            // decodedDataJson.buys.forEach((buy:any) => {
+            //   console.log('\nb4 decode', buy.txnData.data)
+            //   let decodedResponse = iface.decodeFunctionData("execute", buy.txnData.data);
+            //   console.log('after decode')
+            //   let data:any = {};
+            //   this.mapKeyValues(decodedResponse, data);
+            //   data.decodedResponse = decodedDataJson.buys
+            //   responseData.push(data)
+            // });
+            console.log('\n///////responseData////////', responseData);
             return responseData;
         }
         return response;

@@ -27,7 +27,7 @@ const AUTH_RESPONSE: ResponseObject = {
   },
 };
 
-const wallet = new ethers.Wallet(process.env.PK_BOT);
+const wallet = new ethers.Wallet(process.env.PK_0);
 
 export class AuthController {
   constructor(@inject(RestBindings.Http.REQUEST) private req: Request) {

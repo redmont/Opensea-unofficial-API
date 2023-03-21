@@ -58,6 +58,8 @@
     "cloudflare-scraper": "^2.0.0",
     "dotenv": "^16.0.3",
     "ethers": "^6.1.0",
+    "node-aplay": "^1.0.3",
+    "play-sound": "^1.1.5",
     "proxy-chain": "^2.2.1",
     "puppeteer": "^19.7.3",
     "puppeteer-core": "^19.7.3",

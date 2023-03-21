@@ -335,6 +335,31 @@ const getAcceptBidData = async (sellData, price) => {
   return data;
 }
 
+const _assignNextPageUrl = async data => {
+  const last_collection = data.collections[data.collections.length - 1];
+
+  switch(true){
+    case last_collection.floorPrice.amount == null || last_collection.floorPrice.amount <= 0:
+      return url_first_page
+    case last_collection.floorPrice.amount > 0:
+
+      filters = {
+        cursor: {
+          contractAddress:
+            last_collection.contractAddress,
+          floorPrice:
+            last_collection.floorPrice.amount,
+        },
+        sort: 'FLOOR_PRICE',
+        order: 'DESC',
+      };
+
+      return  'http://127.0.0.1:3000/v1/collections/?filters=%7B%22cursor%22%3A%7B%22contractAddress%22%3A%22' + last_collection.contractAddress + '%22%2C%22floorPrice%22%3A%' + last_collection.floorPrice.amount + '%22%7D%2C%22sort%22%3A%22FLOOR_PRICE%22%2C%22order%22%3A%22DESC%22%7D'
+      // filtersURLencoded = encodeURIComponent(JSON.stringify(filters));
+      // return 'http://127.0.0.1:3000/v1/collections/' + '?filters=' + filtersURLencoded;
+  }
+}
+
 (async () => {
   await getAuthTkn();
 
