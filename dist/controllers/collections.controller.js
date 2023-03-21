@@ -51,7 +51,6 @@ let CollectionsController = class CollectionsController {
     }
     // Map to `GET /v1/collections/{collection}/prices`
     async collectionPrices(collection) {
-        console.log('\nIn collectionPrices, collection: ', collection);
         const { authtoken, walletaddress } = this.req.headers;
         const cookies = [{
                 'name': 'authToken',

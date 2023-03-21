@@ -2170,6 +2170,11 @@ find-cache-dir@^3.2.0:
     make-dir "^3.0.2"
     pkg-dir "^4.1.0"
 
+find-exec@1.0.2:
+  version "1.0.2"
+  resolved "https://registry.npmjs.org/find-exec/-/find-exec-1.0.2.tgz"
+  integrity sha512-/cs763F5i7Nm/aG+hjBv2nJB/Bl2w0tnuZd5bbfcV+WYapn8T4ez3B87H6MgvsmdheDkitj/rHi557wvE+XylQ==
+
 find-up@^4.0.0, find-up@^4.1.0:
   version "4.1.0"
   resolved "https://registry.npmjs.org/find-up/-/find-up-4.1.0.tgz"
@@ -3295,6 +3300,11 @@ no-case@^3.0.4:
     lower-case "^2.0.2"
     tslib "^2.0.3"
 
+node-aplay@^1.0.3:
+  version "1.0.3"
+  resolved "https://registry.npmjs.org/node-aplay/-/node-aplay-1.0.3.tgz"
+  integrity sha512-sZmdPpIxHeAjOdP4lQy7hRfUQYdAabodx4+zedSf5Slpm36yWdnpNTLP3jZEsKBZfIIyvzZlCpRvP32skKjHnw==
+
 node-fetch-h2@^2.3.0:
   version "2.3.0"
   resolved "https://registry.npmjs.org/node-fetch-h2/-/node-fetch-h2-2.3.0.tgz"
@@ -3679,6 +3689,13 @@ pkg-dir@^4.1.0:
   integrity sha512-HRDzbaKjC+AOWVXxAU/x54COGeIv9eb+6CkDSQoNTt4XyWoIJvuPsXizxu/Fr23EiekbtZwmh1IcIG/l/a10GQ==
   dependencies:
     find-up "^4.0.0"
+
+play-sound@^1.1.5:
+  version "1.1.5"
+  resolved "https://registry.npmjs.org/play-sound/-/play-sound-1.1.5.tgz"
+  integrity sha512-gbdF1iLNyL5r9Ne9YwARGMkrvfR4EL9G1ZLtFPLkI2tQt0kkHw5CHM5E6Gl/lDuuk/Uj/O5Q29Bi08jMK4egbA==
+  dependencies:
+    find-exec "1.0.2"
 
 prelude-ls@^1.2.1:
   version "1.2.1"

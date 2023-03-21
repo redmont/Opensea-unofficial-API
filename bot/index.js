@@ -1,43 +1,176 @@
 const {ethers, utils} = require('ethers');
+const readline = require('readline');
 const fetch = require('node-fetch');
+const {exec} = require('child_process');
 const provider = new ethers.JsonRpcProvider(
   `https://eth-mainnet.g.alchemy.com/v2/${process.env.API_ALCHEMY}`,
 );
+const player = require('play-sound')();
 
-const wallet = new ethers.Wallet(process.env.PK_BOT, provider);
-let authTkn;
-const delay = 86400; // 24h
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+});
 
 const addr_to_approve_nft = '0x00000000000111abe46ff893f3b2fdf1f759a8a8'; //executionDelegate
+const wallet = new ethers.Wallet(process.env.PK_0, provider);
+const delay = 86400; // 24h
+let authTkn;
+let MIN_PROFIT = 0.0001;
+let profitTotal = 0;
+let amtTotal = 0;
+let amtAllData = 0;
+let loop = 1;
+let MIN_FLOOR_PRICE = 0.5;
 
-/**
- * @todo
- * [ ] Clean
- * [ ] Exec for real example with low risk or small
- */
+let blackListed = []; //cuz in 1st profits existed
+const option = {};
 
-const getAuthTkn = async () => {
-  const URL = 'http://127.0.0.1:3000/auth/getToken';
-  const options = {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
+const db = {
+  constant: {
+    MAX_FLOOR_PRICE: 1,
+    // url_collection_first_page: 'http://127.0.0.1:3000/v1/collections/?filters=%7B%22sort%22%3A%22FLOOR_PRICE%22%2C%22order%22%3A%22ASC%22%7D',
+    url_collection_first_page: "http://127.0.0.1:3000/v1/collections/?filters=%7B%22cursor%22%3A%7B%22contractAddress%22%3A%220xf2cc04b182dd7f9b6a2661a9b3e798c5c8932889%22%2C%22floorPrice%22%3A%220.005%22%7D%2C%22sort%22%3A%22FLOOR_PRICE%22%2C%22order%22%3A%22ASC%22%7D"
+  },
+  api: {
+    auth: {
+      url: 'http://127.0.0.1:3000/auth/getToken',
+      options: {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          walletAddress: wallet.address,
+        }),
+      }
     },
-    body: JSON.stringify({
+    collections: {
+      // url: 'http://127.0.0.1:3000/v1/collections/?filters=%7B%22sort%22%3A%22FLOOR_PRICE%22%2C%22order%22%3A%22ASC%22%7D',
+      url: "http://127.0.0.1:3000/v1/collections/?filters=%7B%22cursor%22%3A%7B%22contractAddress%22%3A%220xf2cc04b182dd7f9b6a2661a9b3e798c5c8932889%22%2C%22floorPrice%22%3A%220.005%22%7D%2C%22sort%22%3A%22FLOOR_PRICE%22%2C%22order%22%3A%22ASC%22%7D",
+      options: {}
+    }
+  }
+}
+
+const setup = async () => {
+  authTkn = (await apiCall(db.api.auth)).accessToken;
+
+  //setup options
+  db.api.collections.options = {
+    method: 'GET',
+    headers: {
+      authToken: authTkn,
       walletAddress: wallet.address,
-    }),
+    },
   };
 
-  let data;
-  await fetch(URL, options)
-    .then(res => res.json())
-    .then(json => (data = JSON.parse(JSON.stringify(json))))
-    .catch(err => console.error('error:' + err));
+  //log
+  console.time('time');
+  console.log('\n\x1b[32m',`↓↓↓ BOT & LOOP ${loop} START ↓↓↓`,'\x1b[0m', '\n');
+}
 
-  authTkn = data.accessToken;
+const apiCall = async ({url, options}) => {
+  let res;
+  await fetch(url, options)
+    .then(res => res.json())
+    .then(json => (res = JSON.parse(JSON.stringify(json))))
+    .catch(err => console.error('error:' + err));
+  return res;
 };
 
-const getPrices = async addr_collection => {
+const getArbs = async data => {
+  const arbs = [];
+
+  data.collections.forEach((collection, index) => {
+    try {
+      const loop_percent = (amtAllData++ / data.totalCount) * 100;
+      process.stdout.write('\x1b[36m' + `\rloop ${loop} completed in: ${loop_percent.toFixed(2)}%` + '\x1b[0m');
+
+      if (
+        collection?.bestCollectionBid?.amount == null ||
+        collection?.bestCollectionBid?.amount <= 0 ||
+        collection?.floorPrice?.amount == null ||
+        collection?.floorPrice?.amount <= 0 ||
+        blackListed.includes(collection.contractAddress)
+      )
+        return false;
+
+      const profit_gross = Number(collection.bestCollectionBid.amount) - Number(collection.floorPrice.amount);
+      const profit_net = profit_gross - MIN_PROFIT;
+
+      if (profit_net > 0) {
+        arbs.push({
+          profit_gross,
+          profit_net,
+          collection: collection
+        });
+      }
+    } catch (e) {
+      console.log('ERR, _getArbs(), collection', collection);
+      console.log('error', e);
+    }
+  });
+
+  return arbs;
+};
+
+const _continueLoop = last_collection => {
+  const filters = {
+    cursor: {
+      contractAddress: last_collection.contractAddress,
+      floorPrice: last_collection.floorPrice.amount,
+    },
+    sort: 'FLOOR_PRICE',
+    order: 'ASC',
+  };
+
+  const filtersURLencoded = encodeURIComponent(JSON.stringify(filters));
+  db.api.collections.url = 'http://127.0.0.1:3000/v1/collections/' + '?filters=' + filtersURLencoded
+};
+
+const _resetLoop = () => {
+  amtTotal = 0;
+  profitTotal = 0;
+  amtAllData = 0;
+  db.api.collections.url = db.constant.url_collection_first_page;
+  console.log('\n\x1b[32m', `↓↓↓ LOOP ${++loop} START ↓↓↓`, '\x1b[0m', '\n');
+  console.time('time');
+};
+
+
+const setNewPage = async data => {
+  const last_collection = data.collections[data.collections.length - 1];
+
+  console.log(' curr fprice: ', Number(last_collection.floorPrice.amount));
+
+  switch (true) {
+    case !last_collection.floorPrice || last_collection.floorPrice.amount == null:
+      console.log('detected false')
+      break;
+    case last_collection.floorPrice.amount > db.constant.MAX_FLOOR_PRICE:
+
+      console.log('\n\nprofitTotal: ', profitTotal);
+      console.log('amtTotal: ', amtTotal);
+      console.timeEnd('time');
+      console.log('\n\x1b[31m', ` ↑↑↑ LOOP ${loop} END ↑↑↑`, '\x1b[0m', '\n');
+
+      const ans = await new Promise(resolve => {
+        rl.question('Do you want to continue? ', resolve);
+      });
+
+      if (ans == 'y' || ans == 'Y' || ans == 'yes' || ans == 'Yes') {
+        return _resetLoop();
+      } else {
+        process.exit(0);
+      }
+
+    case last_collection.floorPrice.amount <= db.constant.MAX_FLOOR_PRICE:
+      return _continueLoop(last_collection);
+  }
+};
+
+const __getPrices = async addr_collection => {
   var url = `http://127.0.0.1:3000/v1/collections/${addr_collection}/prices`;
   var myHeaders = new fetch.Headers();
   myHeaders.append('authToken', authTkn);
@@ -58,16 +191,44 @@ const getPrices = async addr_collection => {
   return data;
 };
 
-const getLowestSellOrder = async prices => {
+const _getLowBuy = async arb => {
+  const prices = await __getPrices(arb.collection.contractAddress);
+  //todo get all low buy that < highestBid
   return prices.nftPrices[0];
 };
 
-const buyFromSellOrder = async (addr_collection, lowestSell) => {
+const _getHighestBid = async addr_collection => {
+  //}/executable-bids`;
+  var url = `http://127.0.0.1:3000/v1/collections/${addr_collection}/executable-bids`;
+  // var url =
+  // 'http://127.0.0.1:3000/v1/collection-bids/acceptable-bids?collectionId=0xa7f551feab03d1f34138c900e7c08821f3c3d1d0&traderAddress=0x174240aa4b903fe0e2ea964b32d2c229dff511f1';
+  // var url = `https://core-api.prod.blur.io/v1/collection-bids/acceptable-bids?collectionId=${sellData.signatures[0].signData.value.collection}&traderAddress=${wallet.address}`;
+  var myHeaders = new fetch.Headers();
+  myHeaders.append('authToken', authTkn);
+  myHeaders.append('content-type', 'application/json');
+  myHeaders.append('walletAddress', wallet.address);
+
+  const options = {
+    method: 'GET',
+    headers: myHeaders,
+    redirect: 'follow',
+  };
+
+  let data;
+  await fetch(url, options)
+    .then(res => res.json())
+    .then(json => (data = JSON.parse(JSON.stringify(json))))
+    .catch(err => console.error('error:' + err));
+  return data;
+};
+
+const _buyFromSellOrder = async (addr_collection, low_buy) => {
   var url = `http://127.0.0.1:3000/v1/buy/${addr_collection}?fulldata=true`;
   var myHeaders = new fetch.Headers();
   myHeaders.append('authToken', authTkn);
   myHeaders.append('content-type', 'application/json');
   myHeaders.append('walletAddress', wallet.address);
+
 
   //headers
   var raw = JSON.stringify({
@@ -75,14 +236,17 @@ const buyFromSellOrder = async (addr_collection, lowestSell) => {
       {
         isSuspicious: false,
         price: {
-          amount: lowestSell.price.amount,
-          unit: 'ETH',
+          amount: low_buy.price.amount,
+          unit: low_buy.price.unit,
         },
-        tokenId: lowestSell.tokenId,
+        tokenId: low_buy.tokenId,
       },
     ],
     userAddress: wallet.address,
   });
+
+  console.log('raw: ', JSON.parse(raw));
+
 
   const options = {
     method: 'POST',
@@ -99,7 +263,7 @@ const buyFromSellOrder = async (addr_collection, lowestSell) => {
   return data;
 };
 
-const getListingData = async (addr_collection, nft_id, nft_price) => {
+const getListData = async (addr_collection, nft_id, nft_price) => {
   var url = `http://127.0.0.1:3000//v1/orders/format`;
   var myHeaders = new fetch.Headers();
   myHeaders.append('authToken', authTkn);
@@ -141,61 +305,9 @@ const getListingData = async (addr_collection, nft_id, nft_price) => {
 };
 
 const getListingSignature = async sellData => {
-  // console.log('sellData', sellData.signatures[0])
   const domain = sellData.signatures[0].signData.domain;
   const types = sellData.signatures[0].signData.types;
   const value = sellData.signatures[0].signData.value;
-
-  // console.log('_domain', _domain)
-  // console.log('_types', _types)
-  // console.log('_value', _value)
-
-  // const domain = {
-  //   name: 'Blur Exchange',
-  //   version: '1.0',
-  //   chainId: 1,
-  //   verifyingContract: '0x000000000000ad05ccc4f10045630fb830b95127',
-  // };
-
-  // const types = {
-  //   Order: [
-  //     { name: 'trader', type: 'address' },
-  //     { name: 'side', type: 'uint8' },
-  //     { name: 'matchingPolicy', type: 'address' },
-  //     { name: 'collection', type: 'address' },
-  //     { name: 'tokenId', type: 'uint256' },
-  //     { name: 'amount', type: 'uint256' },
-  //     { name: 'paymentToken', type: 'address' },
-  //     { name: 'price', type: 'uint256' },
-  //     { name: 'listingTime', type: 'uint256' },
-  //     { name: 'expirationTime', type: 'uint256' },
-  //     { name: 'fees', type: 'Fee[]' },
-  //     { name: 'salt', type: 'uint256' },
-  //     { name: 'extraParams', type: 'bytes' },
-  //     { name: 'nonce', type: 'uint256' },
-  //   ],
-  //   Fee: [
-  //     { name: 'rate', type: 'uint16' },
-  //     { name: 'recipient', type: 'address' },
-  //   ],
-  // };
-
-  // const value = {
-  //   trader: '0x174240aa4b903fe0e2ea964b32d2c229dff511f1',
-  //   side: 1,
-  //   matchingPolicy: '0x0000000000dab4a563819e8fd93dba3b25bc3495',
-  //   collection: '0x8f0a704e24fcea2572d201a22979a98363656c55',
-  //   tokenId: '4425',
-  //   amount: '1',
-  //   paymentToken: '0x0000000000000000000000000000000000000000',
-  //   price: '10000000000000000',
-  //   listingTime: 1678618450,
-  //   expirationTime: 1678704849,
-  //   fees: [{ recipient: '0x81ee7d80a1206a950c9e7847025627fa4ecf233d', rate: 50 }],
-  //   salt: '0x000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000e42ee119090e17e5d2a9f19fa7feadfd',
-  //   extraParams: '0x01',
-  //   nonce: '0',
-  // };
 
   const message = {
     domain,
@@ -208,6 +320,7 @@ const getListingSignature = async sellData => {
     message.types,
     message.value,
   );
+
   return signature;
 };
 
@@ -226,7 +339,7 @@ const listAsset = async (sellData, sig) => {
     marketplaceData: sellData.signatures[0].marketplaceData,
     signature: sig,
   });
-  console.log('\nraw', JSON.parse(raw));
+  // console.log('\nraw', JSON.parse(raw));
 
   const options = {
     method: 'POST',
@@ -243,32 +356,7 @@ const listAsset = async (sellData, sig) => {
   return data;
 };
 
-const getExecutableBids = async sellData => {
-  //}/executable-bids`;
-  var url = `http://127.0.0.1:3000/v1/collections/${sellData.signatures[0].signData.value.collection}/executable-bids`;
-  // var url =
-  // 'http://127.0.0.1:3000/v1/collection-bids/acceptable-bids?collectionId=0xa7f551feab03d1f34138c900e7c08821f3c3d1d0&traderAddress=0x174240aa4b903fe0e2ea964b32d2c229dff511f1';
-  // var url = `https://core-api.prod.blur.io/v1/collection-bids/acceptable-bids?collectionId=${sellData.signatures[0].signData.value.collection}&traderAddress=${wallet.address}`;
-  var myHeaders = new fetch.Headers();
-  myHeaders.append('authToken', authTkn);
-  myHeaders.append('content-type', 'application/json');
-  myHeaders.append('walletAddress', wallet.address);
-
-  const options = {
-    method: 'GET',
-    headers: myHeaders,
-    redirect: 'follow',
-  };
-
-  let data;
-  await fetch(url, options)
-    .then(res => res.json())
-    .then(json => (data = JSON.parse(JSON.stringify(json))))
-    .catch(err => console.error('error:' + err));
-  return data;
-};
-
-const getAcceptBidData = async (sellData, price) => {
+const getSellData = async (listData, price) => {
   var url = `http://127.0.0.1:3000/v1/collection-bids/accept`;
   var myHeaders = new fetch.Headers();
   myHeaders.append('authToken', authTkn);
@@ -277,7 +365,8 @@ const getAcceptBidData = async (sellData, price) => {
 
   //headers
   var raw = JSON.stringify({
-    "contractAddress": sellData.signatures[0].signData.value.collection,
+    // "contractAddress": "0xd601c171851c460082ace709f665a9566586f14b",
+    "contractAddress": listData.signatures[0].signData.value.collection,
     "feeRate": 50,
     "tokenPrices": [
       {
@@ -285,7 +374,8 @@ const getAcceptBidData = async (sellData, price) => {
           "amount": price,
           "unit": "BETH"
         },
-        "tokenId": sellData.signatures[0].signData.value.tokenId
+        // "tokenId": "5159"
+        "tokenId": listData.signatures[0].signData.value.tokenId
       }
     ]
   });
@@ -305,104 +395,155 @@ const getAcceptBidData = async (sellData, price) => {
   return data;
 }
 
-(async () => {
-  await getAuthTkn();
+const _exec = async arb => {
+  console.log('Executing arb for', arb);
 
-  //after getData found arb opp...
-  const target_collection = {
-    contractAddress: '0x5b11fe58a893f8afea6e8b1640b2a4432827726c',
-    name: 'NeekolulDAO',
-    collectionSlug: 'neekoluldao',
-    imageUrl:
-      'https://images.blur.io/_blur-prod/0x5b11fe58a893f8afea6e8b1640b2a4432827726c/1289-7cd0c937ba7cb236',
-    totalSupply: 2389,
-    numberOwners: 311,
-    floorPrice: {amount: '0.0022', unit: 'ETH'},
-    floorPriceOneDay: {amount: '0.0025', unit: 'ETH'},
-    floorPriceOneWeek: {amount: '0.003', unit: 'ETH'},
-    volumeFifteenMinutes: null,
-    volumeOneDay: {amount: '0', unit: 'ETH'},
-    volumeOneWeek: {amount: '0.0101', unit: 'ETH'},
-    bestCollectionBid: {amount: '0.01', unit: 'ETH'},
-    totalCollectionBidValue: {amount: '0.01', unit: 'ETH'},
-    traitFrequencies: null,
-  };
+  const lowBuy = await _getLowBuy(arb);
+  console.log('\nlowBuy', lowBuy);
 
-  // const prices = await getPrices(target_collection.contractAddress);
-  // const lowestSell = await getLowestSellOrder(prices);
-  // const buyData = await buyFromSellOrder(target_collection.contractAddress, lowestSell);
+  const highestBid = (await _getHighestBid(arb.collection.contractAddress)).priceLevels[0].price;
+  console.log('\nhighestBid', highestBid);
 
-  // const txBuy = await wallet.sendTransaction({
-  //   to: buyData[0].decodedResponse[0].to,
-  //   data: buyData[0].decodedResponse[0].txData.data,
-  //   value: buyData[0].decodedResponse[0].txData.value
-  // });
+  const buyData = (await _buyFromSellOrder(arb.collection.contractAddress, lowBuy)).buys[0];
+  // const buyData = (await _buyFromSellOrder(arb.collection.contractAddress, lowBuy))[0].decodedResponse[0];
+  // const buyData = await _buyFromSellOrder(arb.collection.contractAddress, lowBuy)
+  console.log('\nbuyData', buyData);
 
-  // await txBuy.wait();
+  //ask question
+  const ans_exec = await new Promise(resolve => {
+    rl.question('Do you want to continue? ', resolve);
+  });
 
-  //without previous approve
-  const addr_example = '0xa7f551feab03d1f34138c900e7c08821f3c3d1d0';
-  const id_example = '877';
-  const price_example = '0.01';
+  //buy
+  // const amt_eth = Number(buyData.txnData.value.hex/10**18).toString()
+  // console.log('\namt_eth', amt_eth)
+  // return
+  console.log('\nPurchasing the NFT...')
+  const txBuy = await wallet.sendTransaction({
+    to: buyData.txnData.to,
+    data: buyData.txnData.data,
+    value: buyData.txnData.value.hex.toString()
+    // gasLimit: 7500000
+  });
 
-  // const addr_example = "0x8f0a704e24fcea2572d201a22979a98363656c55"
-  // const id_example = "4425"
-  // const price_example = "0.01"
+  await txBuy.wait();
+  console.log('purchased.\n')
 
-  const sellData = await getListingData(
-    addr_example,
-    id_example,
-    price_example,
+  //selling
+  const listData = await getListData(
+    arb.collection.contractAddress,
+    lowBuy.tokenId,
+    highestBid
   );
-  // console.log('sellData', sellData)
 
-  if (sellData.approvals.length > 0) {
-    console.log('will need to approve', sellData.approvals[0]);
-    // console.log('to: sellData.approvals[0].transactionRequest.to', sellData.approvals[0].transactionRequest.to)
-    // console.log('data: sellData.approvals[0].transactionRequest.data', sellData.approvals[0].transactionRequest.data)
-    // const tx = await wallet.sendTransaction({
-    //   //for longer than 1x tx, do in loop
-    //   to: sellData.approvals[0].transactionRequest.to,
-    //   data: sellData.approvals[0].transactionRequest.data,
-    // });
+  console.log('\nlistData', listData);
 
-    // console.log('\napproving the NFT...');
-    // await tx.wait();
+  if (listData.approvals.length > 0) {
+    console.log('will need to approve', listData.approvals[0]);
+    console.log('to: listData.approvals[0].transactionRequest.to', listData.approvals[0].transactionRequest.to)
+    console.log('data: listData.approvals[0].transactionRequest.data', listData.approvals[0].transactionRequest.data)
+    const txApprove = await wallet.sendTransaction({
+      //for longer than 1x tx, do in loop
+      to: listData.approvals[0].transactionRequest.to,
+      data: listData.approvals[0].transactionRequest.data
+    });
+
+    console.log('\napproving the NFT...');
+    await txApprove.wait();
+    console.log('approved.\n');
   }
 
-  // const sig = await getListingSignature(sellData)
-  // console.log('\nlisting...')
-  // const listed = await listAsset(sellData, sig)
-  // console.log('\nIs listed?', listed)
+  const sig = await getListingSignature(listData)
+  console.log('\nlisting the NFT...')
+  const listed = await listAsset(listData, sig)
+  console.log('\nIs listed?', listed)
 
-  const executableBids = await getExecutableBids(sellData);
-  console.log('\nexecutableBids', executableBids);
-  console.log('...', executableBids.priceLevels[0].price);
 
-  const acceptBidData = await getAcceptBidData(sellData, executableBids.priceLevels[0].price);
 
-  if(acceptBidData.approvals.length>0) {
-    console.log('\nwill need to approve', acceptBidData.approvals[0]);
-    // console.log('to: acceptBidData.approvals[0].transactionRequest.to', acceptBidData.approvals[0].transactionRequest.to)
-    // console.log('data: acceptBidData.approvals[0].transactionRequest.data', acceptBidData.approvals[0].transactionRequest.data)
+  //selling
+  const sellData = await getSellData(listData, highestBid)
+  console.log('\nsellData', sellData)
+
+  if(sellData.approvals.length>0) {
+    console.log('\nwill need to approve', sellData.approvals[0]);
     const tx = await wallet.sendTransaction({
-      //for longer than 1x tx, do in loop
-      to: acceptBidData.approvals[0].transactionRequest.to,
-      data: acceptBidData.approvals[0].transactionRequest.data,
+      to: sellData.approvals[0].transactionRequest.to,
+      data: sellData.approvals[0].transactionRequest.data,
     });
 
     console.log('\napproving the NFT...');
     await tx.wait();
   }
 
-  // accept bid
+  console.log('\nselling the NFT...')
   const txSell = await wallet.sendTransaction({
-    to: acceptBidData.txnData.to,
-    data: acceptBidData.txnData.data
-    // value: acceptBidData.txnData.value
+    to: sellData.txnData.to,
+    data: sellData.txnData.data
+    // value: sellData.txnData.value
   });
 
-  console.log('\nselling...')
   const response = await txSell.wait();
-  console.log('response', response);
+  console.log('Response:', response);
+}
+
+const execArbs = async arbs => {
+  for (const arb of arbs) {
+    profitTotal += arb.profit_net;
+    if (arb.profit_net > 0) {
+      // player.play('./bot/ding.mp3', err => {});
+
+      console.log('\n\nDetected arb:', arb.profit_net);
+      console.log('floor', Number(arb.collection.floorPrice.amount));
+      console.log('curr url', db.api.collections.url)
+      console.log(
+        `link: https://etherscan.io/address/${arb.collection.contractAddress}`,
+      );
+
+      const ans_exec = await new Promise(resolve => {
+        rl.question('Do you want exec? ', resolve);
+      });
+
+      switch (true) {
+        case ans_exec == 'y' ||
+          ans_exec == 'Y' ||
+          ans_exec == 'yes' ||
+          ans_exec == 'Yes':
+          console.log('exec...');
+          await _exec(arb);
+          return;
+        default:
+          const ans_block = await new Promise(resolve => {
+            rl.question('Do you want to add to blacklist? ', resolve);
+          });
+
+          if (
+            ans_block == 'y' ||
+            ans_block == 'Y' ||
+            ans_block == 'yes' ||
+            ans_block == 'Yes'
+          ) {
+            blackListed.push(arb.collection.contractAddress);
+            console.log('☠️ Added to blacklist. ☠️\n');
+          }
+
+          console.log('not exec.');
+          return;
+      }
+    }
+  }
+};
+
+(async () => {
+  await setup()
+
+  while (true) {
+    const data = await apiCall(db.api.collections);
+    const arbs = await getArbs(data);
+
+    if (arbs.length > 0) {
+      await execArbs(arbs);
+    }
+
+    await setNewPage(data);
+  }
 })();

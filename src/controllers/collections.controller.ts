@@ -68,7 +68,6 @@ export class CollectionsController {
     @get('/v1/collections/{collection}/prices')
     @response(200, RESPONSE)
     async collectionPrices(@param.path.string('collection') collection: string): Promise<any> {
-      console.log('\nIn collectionPrices, collection: ', collection)
       const {authtoken,walletaddress} = this.req.headers
       const cookies = [{
         'name': 'authToken',
