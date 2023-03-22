@@ -457,7 +457,7 @@ const _exec = async arb => {
   console.log('\nlisting the NFT...')
   const listed = await listAsset(listData, sig)
   console.log('\nIs listed?', listed)
-
+  
   //////////////// SELL (1h delay here) ////////////////////
   const sellData = await getSellData(listData, highestBid)
   console.log('\nsellData', sellData)
