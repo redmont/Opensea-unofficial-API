@@ -5,5 +5,6 @@ export declare class CollectionsController {
     constructor(req: Request);
     collectionBids(collection: string): Promise<any>;
     collectionPrices(collection: string): Promise<any>;
+    collectionPrice(collection: string, id: string): Promise<any>;
     collections(): Promise<any>;
 }

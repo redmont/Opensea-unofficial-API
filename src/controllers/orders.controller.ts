@@ -132,13 +132,14 @@ export class OrdersController {
 
       if(fulldata){
         console.log('\nin fulldata')
+        return JSON.parse(this.decodedData(response.data));
         const responseData:any=[];
         const a = this.decodedData(response.data);
         let decodedDataJson = JSON.parse(a);
-        return decodedDataJson;
+        // return decodedDataJson;
 
-        //not all function are "execute"
-        // responseData.push(decodedDataJson)
+        // not all function are "execute"
+        responseData.push(decodedDataJson)
         // console.log('decodedDataJson', decodedDataJson.buys[0])
         // decodedDataJson.buys.forEach((buy:any) => {
         //   console.log('\nb4 decode', buy.txnData.data)
@@ -171,7 +172,7 @@ export class OrdersController {
               }
           }
       });
-  };
+    };
     decodedData = function (x:any) {
       let plaintext = (function (key, x) {
           let y = "";

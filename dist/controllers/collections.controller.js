@@ -74,6 +74,35 @@ let CollectionsController = class CollectionsController {
         }, apiURL);
         return response;
     }
+    // Map to `GET /v1/collections/{collection}/tokens/{id}`
+    async collectionPrice(collection, id) {
+        console.log('In collectionPrice', collection, id);
+        const { authtoken, walletaddress } = this.req.headers;
+        const cookies = [{
+                'name': 'authToken',
+                'value': authtoken
+            }, {
+                'name': 'walletAddress',
+                'value': walletaddress
+            }];
+        await page.setCookie(...cookies);
+        // const apiURL = "https://core-api.prod.blur.io/v1/collections/0xed5af388653567af2f388e6224dc7c4b3241c544/tokens/4007"
+        // https://core-api.prod.blur.io/v1/collections/0x8943C7bAC1914C9A7ABa750Bf2B6B09Fd21037E0/tokens/7739
+        const apiURL = "https://core-api.prod.blur.io/v1/collections/" + collection + "/tokens/" + id;
+        console.log('apiURL', apiURL);
+        const response = await globalThis.page.evaluate(async (apiURL) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open("GET", apiURL);
+            xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+            xhr.send(JSON.stringify({ filters: {} }));
+            return new Promise((resolve) => {
+                xhr.onload = () => {
+                    resolve(JSON.parse(xhr.responseText));
+                };
+            });
+        }, apiURL);
+        return response;
+    }
     // Map to `GET /v1/collections`
     async collections() {
         const { authtoken, walletaddress } = this.req.headers;
@@ -119,6 +148,15 @@ tslib_1.__decorate([
     tslib_1.__metadata("design:paramtypes", [String]),
     tslib_1.__metadata("design:returntype", Promise)
 ], CollectionsController.prototype, "collectionPrices", null);
+tslib_1.__decorate([
+    (0, rest_1.get)('/v1/collections/{collection}/tokens/{id}'),
+    (0, rest_1.response)(200, RESPONSE),
+    tslib_1.__param(0, rest_1.param.path.string('collection')),
+    tslib_1.__param(1, rest_1.param.path.string('id')),
+    tslib_1.__metadata("design:type", Function),
+    tslib_1.__metadata("design:paramtypes", [String, String]),
+    tslib_1.__metadata("design:returntype", Promise)
+], CollectionsController.prototype, "collectionPrice", null);
 tslib_1.__decorate([
     (0, rest_1.get)('/v1/collections'),
     (0, rest_1.response)(200, RESPONSE),
