@@ -1,12 +1,12 @@
-import {ApiBlurUnofficialApplication} from './application';
+import { ApiOSUnofficialApplication } from "./application";
 
 export async function migrate(args: string[]) {
-  const existingSchema = args.includes('--rebuild') ? 'drop' : 'alter';
-  console.log('Migrating schemas (%s existing schema)', existingSchema);
+  const existingSchema = args.includes("--rebuild") ? "drop" : "alter";
+  console.log("Migrating schemas (%s existing schema)", existingSchema);
 
-  const app = new ApiBlurUnofficialApplication();
+  const app = new ApiOSUnofficialApplication();
   await app.boot();
-  await app.migrateSchema({existingSchema});
+  await app.migrateSchema({ existingSchema });
 
   // Connectors usually keep a pool of opened connections,
   // this keeps the process running even after all work is done.
@@ -14,7 +14,7 @@ export async function migrate(args: string[]) {
   process.exit(0);
 }
 
-migrate(process.argv).catch(err => {
-  console.error('Cannot migrate database schema', err);
+migrate(process.argv).catch((err) => {
+  console.error("Cannot migrate database schema", err);
   process.exit(1);
 });
