@@ -1,6 +1,5 @@
 export default {
-    urls: {
-        blurApiBaseURL: "https://core-api.prod.blur.io",
-        blurApiAuthChallengeURL: "/auth/challenge",
-    },
+  urls: {
+    OSApiBaseURL: "https://opensea.io/__api/graphql/",
+  },
 };

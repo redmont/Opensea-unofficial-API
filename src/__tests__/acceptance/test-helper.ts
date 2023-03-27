@@ -1,9 +1,9 @@
-import {ApiBlurUnofficialApplication} from '../..';
+import { ApiOSUnofficialApplication } from "../..";
 import {
   createRestAppClient,
   givenHttpServerConfig,
   Client,
-} from '@loopback/testlab';
+} from "@loopback/testlab";
 
 export async function setupApplication(): Promise<AppWithClient> {
   const restConfig = givenHttpServerConfig({
@@ -14,7 +14,7 @@ export async function setupApplication(): Promise<AppWithClient> {
     // port: +process.env.PORT,
   });
 
-  const app = new ApiBlurUnofficialApplication({
+  const app = new ApiOSUnofficialApplication({
     rest: restConfig,
   });
 
@@ -23,10 +23,10 @@ export async function setupApplication(): Promise<AppWithClient> {
 
   const client = createRestAppClient(app);
 
-  return {app, client};
+  return { app, client };
 }
 
 export interface AppWithClient {
-  app: ApiBlurUnofficialApplication;
+  app: ApiOSUnofficialApplication;
   client: Client;
 }
