@@ -32,13 +32,15 @@ export class OrdersController {
   async getCollectionOrders(
     @param.query.string("chain") chain: string,
     @param.path.string("collection") collection: string,
-    @param.query.string("count") count: string
+    @param.query.string("count") count: string,
+    @param.query.string("event_types") event_types: string
   ): Promise<any> {
-    //chain ? chain : "ETHEREUM";
-    count ? count : 16;
+    chain = chain ? chain : "";
+    count = count ? count : "16";
+    const events = event_types ? event_types.split(",") : ["OFFER_ENTERED"];
 
     const response = await globalThis.page.evaluate(
-      async (count: string, collection: string) => {
+      async (count: string, collection: string, chain: string, events: any) => {
         var data = JSON.stringify({
           id: "EventHistoryQuery",
           query:
@@ -48,8 +50,8 @@ export class OrdersController {
             bundle: null,
             collections: [collection],
             categories: null,
-            chains: null,
-            eventTypes: ["OFFER_ENTERED"],
+            chains: chain ? [chain] : null,
+            eventTypes: events,
             cursor: null,
             count: parseInt(count),
             showAll: true,
@@ -86,7 +88,9 @@ export class OrdersController {
         });
       },
       count,
-      collection
+      collection,
+      chain,
+      events
     );
     return response;
   }
@@ -99,8 +103,7 @@ export class OrdersController {
     @param.path.string("tokenID") tokenID: string,
     @param.path.string("collection") collection: string
   ): Promise<any> {
-    console.log(chain, tokenID, collection);
-    chain ? chain : "ETHEREUM";
+    chain = chain ? chain : "";
     const relayID = await this.getRelayID(chain, tokenID, collection);
     console.log(relayID);
 
@@ -113,11 +116,14 @@ export class OrdersController {
   @response(200, RESPONSE)
   async allOrders(
     @param.query.string("chain") chain: string,
-    @param.query.string("count") count: string
+    @param.query.string("count") count: string,
+    @param.query.string("event_types") event_types: string
   ): Promise<any> {
-    chain ? chain : "ETHEREUM";
-    count ? count : "16";
-    const orders = await this.getAllOrders(count, chain);
+    chain = chain ? chain : "";
+    count = count ? count : "16";
+    const events = event_types ? event_types.split(",") : ["OFFER_ENTERED"];
+    console.log(events);
+    const orders = await this.getAllOrders(count, chain, events);
     return orders;
   }
 
@@ -202,54 +208,59 @@ export class OrdersController {
     return response;
   };
 
-  getAllOrders = async (count: string, chain: string) => {
-    const response = await globalThis.page.evaluate(async (count: string) => {
-      var data = JSON.stringify({
-        id: "EventHistoryQuery",
-        query:
-          "query EventHistoryQuery(\n  $archetype: ArchetypeInputType\n  $bundle: BundleSlug\n  $collections: [CollectionSlug!]\n  $categories: [CollectionSlug!]\n  $chains: [ChainScalar!]\n  $eventTypes: [EventType!]\n  $cursor: String\n  $count: Int = 16\n  $showAll: Boolean = false\n  $identity: IdentityInputType\n  $stringTraits: [TraitInputType!]\n  $isRarityExpansionEnabled: Boolean!\n  $eventTimestamp_Gt: DateTime\n  $rarityFilter: RarityFilterType\n) {\n  ...EventHistory_data_2Weyxc\n}\n\nfragment AccountLink_data on AccountType {\n  address\n  config\n  isCompromised\n  user {\n    publicUsername\n    id\n  }\n  displayName\n  ...ProfileImage_data\n  ...wallet_accountKey\n  ...accounts_url\n}\n\nfragment AssetMediaAnimation_asset on AssetType {\n  ...AssetMediaImage_asset\n  ...AssetMediaContainer_asset\n  ...AssetMediaPlaceholderImage_asset\n}\n\nfragment AssetMediaAudio_asset on AssetType {\n  backgroundColor\n  ...AssetMediaImage_asset\n}\n\nfragment AssetMediaContainer_asset on AssetType {\n  backgroundColor\n  ...AssetMediaEditions_asset_2V84VL\n}\n\nfragment AssetMediaContainer_asset_2V84VL on AssetType {\n  backgroundColor\n  ...AssetMediaEditions_asset_2V84VL\n}\n\nfragment AssetMediaEditions_asset_2V84VL on AssetType {\n  decimals\n}\n\nfragment AssetMediaImage_asset on AssetType {\n  backgroundColor\n  imageUrl\n  collection {\n    displayData {\n      cardDisplayStyle\n    }\n    id\n  }\n}\n\nfragment AssetMediaPlaceholderImage_asset on AssetType {\n  collection {\n    displayData {\n      cardDisplayStyle\n    }\n    id\n  }\n}\n\nfragment AssetMediaVideo_asset on AssetType {\n  backgroundColor\n  ...AssetMediaImage_asset\n}\n\nfragment AssetMediaWebgl_asset on AssetType {\n  backgroundColor\n  ...AssetMediaImage_asset\n}\n\nfragment AssetMedia_asset on AssetType {\n  animationUrl\n  displayImageUrl\n  imageUrl\n  isDelisted\n  ...AssetMediaAnimation_asset\n  ...AssetMediaAudio_asset\n  ...AssetMediaContainer_asset_2V84VL\n  ...AssetMediaImage_asset\n  ...AssetMediaPlaceholderImage_asset\n  ...AssetMediaVideo_asset\n  ...AssetMediaWebgl_asset\n}\n\nfragment CollectionCell_collection on CollectionType {\n  name\n  imageUrl\n  isVerified\n  ...collection_url\n}\n\nfragment CollectionCell_trait on TraitType {\n  traitType\n  value\n}\n\nfragment CollectionLink_assetContract on AssetContractType {\n  address\n  blockExplorerLink\n}\n\nfragment CollectionLink_collection on CollectionType {\n  name\n  slug\n  verificationStatus\n  ...collection_url\n}\n\nfragment EventHistory_data_2Weyxc on Query {\n  eventActivity(after: $cursor, bundle: $bundle, archetype: $archetype, first: $count, categories: $categories, collections: $collections, chains: $chains, eventTypes: $eventTypes, identity: $identity, includeHidden: true, stringTraits: $stringTraits, eventTimestamp_Gt: $eventTimestamp_Gt, rarityFilter: $rarityFilter) {\n    edges {\n      node {\n        collection {\n          ...CollectionCell_collection\n          id\n        }\n        traitCriteria {\n          ...CollectionCell_trait\n          id\n        }\n        itemQuantity\n        item @include(if: $showAll) {\n          __typename\n          relayId\n          verificationStatus\n          ...ItemCell_data\n          ...item_url\n          ...PortfolioTableItemCellTooltip_item\n          ... on AssetType {\n            defaultRarityData @include(if: $isRarityExpansionEnabled) {\n              rank\n              id\n            }\n            collection {\n              ...CollectionLink_collection\n              id\n            }\n            assetContract {\n              ...CollectionLink_assetContract\n              id\n            }\n          }\n          ... on AssetBundleType {\n            bundleCollection: collection {\n              ...CollectionLink_collection\n              id\n            }\n          }\n          ... on Node {\n            __isNode: __typename\n            id\n          }\n        }\n        relayId\n        eventTimestamp\n        eventType\n        orderStatus\n        customEventName\n        ...utilsAssetEventLabel\n        creatorFee {\n          unit\n        }\n        devFeePaymentEvent {\n          ...EventTimestamp_data\n          id\n        }\n        fromAccount {\n          address\n          ...AccountLink_data\n          id\n        }\n        perUnitPrice {\n          unit\n          eth\n          usd\n        }\n        endingPriceType {\n          unit\n        }\n        priceType {\n          unit\n        }\n        payment {\n          ...TokenPricePayment\n          id\n        }\n        seller {\n          ...AccountLink_data\n          id\n        }\n        sellOrder {\n          taker {\n            __typename\n            id\n          }\n          id\n        }\n        toAccount {\n          ...AccountLink_data\n          id\n        }\n        winnerAccount {\n          ...AccountLink_data\n          id\n        }\n        ...EventTimestamp_data\n        id\n        __typename\n      }\n      cursor\n    }\n    pageInfo {\n      endCursor\n      hasNextPage\n    }\n  }\n}\n\nfragment EventTimestamp_data on AssetEventType {\n  eventTimestamp\n  transaction {\n    blockExplorerLink\n    id\n  }\n}\n\nfragment ItemCell_data on ItemType {\n  __isItemType: __typename\n  __typename\n  displayName\n  ...item_url\n  ...PortfolioTableItemCellTooltip_item\n  ... on AssetType {\n    ...AssetMedia_asset\n  }\n  ... on AssetBundleType {\n    assetQuantities(first: 30) {\n      edges {\n        node {\n          asset {\n            ...AssetMedia_asset\n            id\n          }\n          relayId\n          id\n        }\n      }\n    }\n  }\n}\n\nfragment PortfolioTableItemCellTooltip_item on ItemType {\n  __isItemType: __typename\n  __typename\n  ...AssetMedia_asset\n  ...PortfolioTableTraitTable_asset\n  ...asset_url\n}\n\nfragment PortfolioTableTraitTable_asset on AssetType {\n  assetContract {\n    address\n    chain\n    id\n  }\n  isCurrentlyFungible\n  tokenId\n  ...asset_url\n}\n\nfragment ProfileImage_data on AccountType {\n  imageUrl\n}\n\nfragment TokenPricePayment on PaymentAssetType {\n  symbol\n}\n\nfragment accounts_url on AccountType {\n  address\n  user {\n    publicUsername\n    id\n  }\n}\n\nfragment asset_url on AssetType {\n  assetContract {\n    address\n    id\n  }\n  tokenId\n  chain {\n    identifier\n  }\n}\n\nfragment bundle_url on AssetBundleType {\n  slug\n  chain {\n    identifier\n  }\n}\n\nfragment collection_url on CollectionType {\n  slug\n  isCategory\n}\n\nfragment item_url on ItemType {\n  __isItemType: __typename\n  __typename\n  ... on AssetType {\n    ...asset_url\n  }\n  ... on AssetBundleType {\n    ...bundle_url\n  }\n}\n\nfragment utilsAssetEventLabel on AssetEventType {\n  isMint\n  isAirdrop\n  eventType\n}\n\nfragment wallet_accountKey on AccountType {\n  address\n}\n",
-        variables: {
-          archetype: null,
-          bundle: null,
-          collections: [],
-          categories: null,
-          chains: null,
-          eventTypes: ["OFFER_ENTERED"],
-          cursor: null,
-          count: parseInt(count),
-          showAll: true,
-          identity: null,
-          stringTraits: [],
-          isRarityExpansionEnabled: false,
-          eventTimestamp_Gt: null,
-          rarityFilter: null,
-        },
-      });
+  getAllOrders = async (count: string, chain: string, events: any) => {
+    const response = await globalThis.page.evaluate(
+      async (count: string, chain: string, events: any) => {
+        var data = JSON.stringify({
+          id: "EventHistoryQuery",
+          query:
+            "query EventHistoryQuery(\n  $archetype: ArchetypeInputType\n  $bundle: BundleSlug\n  $collections: [CollectionSlug!]\n  $categories: [CollectionSlug!]\n  $chains: [ChainScalar!]\n  $eventTypes: [EventType!]\n  $cursor: String\n  $count: Int = 16\n  $showAll: Boolean = false\n  $identity: IdentityInputType\n  $stringTraits: [TraitInputType!]\n  $isRarityExpansionEnabled: Boolean!\n  $eventTimestamp_Gt: DateTime\n  $rarityFilter: RarityFilterType\n) {\n  ...EventHistory_data_2Weyxc\n}\n\nfragment AccountLink_data on AccountType {\n  address\n  config\n  isCompromised\n  user {\n    publicUsername\n    id\n  }\n  displayName\n  ...ProfileImage_data\n  ...wallet_accountKey\n  ...accounts_url\n}\n\nfragment AssetMediaAnimation_asset on AssetType {\n  ...AssetMediaImage_asset\n  ...AssetMediaContainer_asset\n  ...AssetMediaPlaceholderImage_asset\n}\n\nfragment AssetMediaAudio_asset on AssetType {\n  backgroundColor\n  ...AssetMediaImage_asset\n}\n\nfragment AssetMediaContainer_asset on AssetType {\n  backgroundColor\n  ...AssetMediaEditions_asset_2V84VL\n}\n\nfragment AssetMediaContainer_asset_2V84VL on AssetType {\n  backgroundColor\n  ...AssetMediaEditions_asset_2V84VL\n}\n\nfragment AssetMediaEditions_asset_2V84VL on AssetType {\n  decimals\n}\n\nfragment AssetMediaImage_asset on AssetType {\n  backgroundColor\n  imageUrl\n  collection {\n    displayData {\n      cardDisplayStyle\n    }\n    id\n  }\n}\n\nfragment AssetMediaPlaceholderImage_asset on AssetType {\n  collection {\n    displayData {\n      cardDisplayStyle\n    }\n    id\n  }\n}\n\nfragment AssetMediaVideo_asset on AssetType {\n  backgroundColor\n  ...AssetMediaImage_asset\n}\n\nfragment AssetMediaWebgl_asset on AssetType {\n  backgroundColor\n  ...AssetMediaImage_asset\n}\n\nfragment AssetMedia_asset on AssetType {\n  animationUrl\n  displayImageUrl\n  imageUrl\n  isDelisted\n  ...AssetMediaAnimation_asset\n  ...AssetMediaAudio_asset\n  ...AssetMediaContainer_asset_2V84VL\n  ...AssetMediaImage_asset\n  ...AssetMediaPlaceholderImage_asset\n  ...AssetMediaVideo_asset\n  ...AssetMediaWebgl_asset\n}\n\nfragment CollectionCell_collection on CollectionType {\n  name\n  imageUrl\n  isVerified\n  ...collection_url\n}\n\nfragment CollectionCell_trait on TraitType {\n  traitType\n  value\n}\n\nfragment CollectionLink_assetContract on AssetContractType {\n  address\n  blockExplorerLink\n}\n\nfragment CollectionLink_collection on CollectionType {\n  name\n  slug\n  verificationStatus\n  ...collection_url\n}\n\nfragment EventHistory_data_2Weyxc on Query {\n  eventActivity(after: $cursor, bundle: $bundle, archetype: $archetype, first: $count, categories: $categories, collections: $collections, chains: $chains, eventTypes: $eventTypes, identity: $identity, includeHidden: true, stringTraits: $stringTraits, eventTimestamp_Gt: $eventTimestamp_Gt, rarityFilter: $rarityFilter) {\n    edges {\n      node {\n        collection {\n          ...CollectionCell_collection\n          id\n        }\n        traitCriteria {\n          ...CollectionCell_trait\n          id\n        }\n        itemQuantity\n        item @include(if: $showAll) {\n          __typename\n          relayId\n          verificationStatus\n          ...ItemCell_data\n          ...item_url\n          ...PortfolioTableItemCellTooltip_item\n          ... on AssetType {\n            defaultRarityData @include(if: $isRarityExpansionEnabled) {\n              rank\n              id\n            }\n            collection {\n              ...CollectionLink_collection\n              id\n            }\n            assetContract {\n              ...CollectionLink_assetContract\n              id\n            }\n          }\n          ... on AssetBundleType {\n            bundleCollection: collection {\n              ...CollectionLink_collection\n              id\n            }\n          }\n          ... on Node {\n            __isNode: __typename\n            id\n          }\n        }\n        relayId\n        eventTimestamp\n        eventType\n        orderStatus\n        customEventName\n        ...utilsAssetEventLabel\n        creatorFee {\n          unit\n        }\n        devFeePaymentEvent {\n          ...EventTimestamp_data\n          id\n        }\n        fromAccount {\n          address\n          ...AccountLink_data\n          id\n        }\n        perUnitPrice {\n          unit\n          eth\n          usd\n        }\n        endingPriceType {\n          unit\n        }\n        priceType {\n          unit\n        }\n        payment {\n          ...TokenPricePayment\n          id\n        }\n        seller {\n          ...AccountLink_data\n          id\n        }\n        sellOrder {\n          taker {\n            __typename\n            id\n          }\n          id\n        }\n        toAccount {\n          ...AccountLink_data\n          id\n        }\n        winnerAccount {\n          ...AccountLink_data\n          id\n        }\n        ...EventTimestamp_data\n        id\n        __typename\n      }\n      cursor\n    }\n    pageInfo {\n      endCursor\n      hasNextPage\n    }\n  }\n}\n\nfragment EventTimestamp_data on AssetEventType {\n  eventTimestamp\n  transaction {\n    blockExplorerLink\n    id\n  }\n}\n\nfragment ItemCell_data on ItemType {\n  __isItemType: __typename\n  __typename\n  displayName\n  ...item_url\n  ...PortfolioTableItemCellTooltip_item\n  ... on AssetType {\n    ...AssetMedia_asset\n  }\n  ... on AssetBundleType {\n    assetQuantities(first: 30) {\n      edges {\n        node {\n          asset {\n            ...AssetMedia_asset\n            id\n          }\n          relayId\n          id\n        }\n      }\n    }\n  }\n}\n\nfragment PortfolioTableItemCellTooltip_item on ItemType {\n  __isItemType: __typename\n  __typename\n  ...AssetMedia_asset\n  ...PortfolioTableTraitTable_asset\n  ...asset_url\n}\n\nfragment PortfolioTableTraitTable_asset on AssetType {\n  assetContract {\n    address\n    chain\n    id\n  }\n  isCurrentlyFungible\n  tokenId\n  ...asset_url\n}\n\nfragment ProfileImage_data on AccountType {\n  imageUrl\n}\n\nfragment TokenPricePayment on PaymentAssetType {\n  symbol\n}\n\nfragment accounts_url on AccountType {\n  address\n  user {\n    publicUsername\n    id\n  }\n}\n\nfragment asset_url on AssetType {\n  assetContract {\n    address\n    id\n  }\n  tokenId\n  chain {\n    identifier\n  }\n}\n\nfragment bundle_url on AssetBundleType {\n  slug\n  chain {\n    identifier\n  }\n}\n\nfragment collection_url on CollectionType {\n  slug\n  isCategory\n}\n\nfragment item_url on ItemType {\n  __isItemType: __typename\n  __typename\n  ... on AssetType {\n    ...asset_url\n  }\n  ... on AssetBundleType {\n    ...bundle_url\n  }\n}\n\nfragment utilsAssetEventLabel on AssetEventType {\n  isMint\n  isAirdrop\n  eventType\n}\n\nfragment wallet_accountKey on AccountType {\n  address\n}\n",
+          variables: {
+            archetype: null,
+            bundle: null,
+            collections: [],
+            categories: null,
+            chains: chain ? [chain] : null,
+            eventTypes: events,
+            cursor: null,
+            count: parseInt(count),
+            showAll: true,
+            identity: null,
+            stringTraits: [],
+            isRarityExpansionEnabled: false,
+            eventTimestamp_Gt: null,
+            rarityFilter: null,
+          },
+        });
 
-      var xhr = new XMLHttpRequest();
-      xhr.withCredentials = true;
+        var xhr = new XMLHttpRequest();
+        xhr.withCredentials = true;
 
-      xhr.open("POST", "https://opensea.io/__api/graphql/");
-      xhr.setRequestHeader("accept", "*/*");
-      xhr.setRequestHeader("accept-language", "en-US,en;q=0.9");
-      xhr.setRequestHeader("content-type", "application/json");
-      xhr.setRequestHeader("x-app-id", "opensea-web");
-      xhr.setRequestHeader(
-        "x-build-id",
-        "4b967afcba976a7ff38b15601253adc57f5e6141"
-      );
-      xhr.setRequestHeader(
-        "x-signed-query",
-        "81f8a6c4bffe8301df2537b52126cc38309a2dd08b5b4460c84c4fc326293ba4"
-      );
+        xhr.open("POST", "https://opensea.io/__api/graphql/");
+        xhr.setRequestHeader("accept", "*/*");
+        xhr.setRequestHeader("accept-language", "en-US,en;q=0.9");
+        xhr.setRequestHeader("content-type", "application/json");
+        xhr.setRequestHeader("x-app-id", "opensea-web");
+        xhr.setRequestHeader(
+          "x-build-id",
+          "4b967afcba976a7ff38b15601253adc57f5e6141"
+        );
+        xhr.setRequestHeader(
+          "x-signed-query",
+          "81f8a6c4bffe8301df2537b52126cc38309a2dd08b5b4460c84c4fc326293ba4"
+        );
 
-      xhr.send(data);
-      return new Promise((resolve) => {
-        xhr.onload = () => {
-          resolve(JSON.parse(xhr.responseText));
-        };
-      });
-    }, count);
+        xhr.send(data);
+        return new Promise((resolve) => {
+          xhr.onload = () => {
+            resolve(JSON.parse(xhr.responseText));
+          };
+        });
+      },
+      count,
+      chain,
+      events
+    );
     return response;
   };
 
